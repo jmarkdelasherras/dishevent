@@ -166,25 +166,75 @@ jobs:
         run: npm install -g firebase-tools@latest
         
       # Fix permissions for Firebase deployment
-      - name: Ensure Service Account has Firebase Admin role
+      - name: Ensure Service Account has necessary roles
         run: |
-          # Grant the service account Firebase Admin role if needed
+          # Get the service account being used
           SERVICE_ACCOUNT="github-access-workflows-001@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
+          
+          # Grant the service account Firebase Admin role
           gcloud projects add-iam-policy-binding ${{ secrets.GCP_PROJECT_ID }} \
             --member="serviceAccount:$SERVICE_ACCOUNT" \
             --role="roles/firebase.admin" \
             --condition=None || true
             
-          # Also add Editor role which might be needed for some operations
+          # Add Editor role for general operations
           gcloud projects add-iam-policy-binding ${{ secrets.GCP_PROJECT_ID }} \
             --member="serviceAccount:$SERVICE_ACCOUNT" \
             --role="roles/editor" \
             --condition=None || true
+            
+          # Add Developer Connect Admin role for git repository access
+          gcloud projects add-iam-policy-binding ${{ secrets.GCP_PROJECT_ID }} \
+            --member="serviceAccount:$SERVICE_ACCOUNT" \
+            --role="roles/developerconnect.admin" \
+            --condition=None || true
+            
+          # Add Cloud Build Editor role for build operations
+          gcloud projects add-iam-policy-binding ${{ secrets.GCP_PROJECT_ID }} \
+            --member="serviceAccount:$SERVICE_ACCOUNT" \
+            --role="roles/cloudbuild.builds.editor" \
+            --condition=None || true
+            
+          # Add App Engine Admin role which may be required for Firebase App Hosting
+          gcloud projects add-iam-policy-binding ${{ secrets.GCP_PROJECT_ID }} \
+            --member="serviceAccount:$SERVICE_ACCOUNT" \
+            --role="roles/appengine.appAdmin" \
+            --condition=None || true
         
+      - name: Verify GitHub connection
+        run: |
+          # Try to list connections to check if we can access them
+          gcloud developer-connect connections list --location=us-central1 || true
+          
+          # List existing repository links
+          gcloud developer-connect git-repository-links list --connection=apphosting-github-conn-s3lyhb --location=us-central1 || true
+          
+          # Grant permissions to service accounts that might need access
+          SERVICE_ACCOUNT_FIREBASE="firebase-app-hosting-compute@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
+          
+          gcloud projects add-iam-policy-binding ${{ secrets.GCP_PROJECT_ID }} \
+            --member="serviceAccount:$SERVICE_ACCOUNT_FIREBASE" \
+            --role="roles/developerconnect.admin" \
+            --condition=None || true
+            
       - name: Deploy to Firebase App Hosting (Development)
         run: |
           cp firebase.dev.json firebase.json
           cp apphosting.dev.yaml apphosting.yaml
+          
+          # Show the content of firebase.json (for debugging)
+          echo "Contents of firebase.json:"
+          cat firebase.json
+          
+          # Show the content of apphosting.yaml (for debugging)
+          echo "Contents of apphosting.yaml:"
+          cat apphosting.yaml
+          
+          # Enable APIs that might be needed
+          gcloud services enable firebaseapphosting.googleapis.com
+          gcloud services enable developerconnect.googleapis.com
+          gcloud services enable cloudbuild.googleapis.com
+          gcloud services enable artifactregistry.googleapis.com
           
           # Use the access token from Google auth directly
           firebase deploy --only apphosting --project ${{ secrets.GCP_PROJECT_ID }} --non-interactive --debug

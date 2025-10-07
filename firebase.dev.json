@@ -1,22 +1,23 @@
 {
-  "apphosting": {
-    "backendId": "dishevent-dev",
-    "rootDir": "/",
-    "source": ".",
-    "ignore": [
-      "node_modules",
-      ".git",
-      "firebase-debug.log",
-      "firebase-debug.*.log",
-      "functions",
-      ".next/cache",
-      "coverage",
-      "test"
-    ],
-    "frameworkBuild": {
-      "command": "npm run build"
+  "apphosting": [
+    {
+      "backendId": "dishevent-dev",
+      "rootDir": "/",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions",
+        ".next/cache",
+        "coverage",
+        "test"
+      ],
+      "frameworkBuild": {
+        "command": "npm run build"
+      }
     }
-  },
+  ],
   "hosting": {
     "appId": "dishevent-dev",
     "cleanUrls": true,
