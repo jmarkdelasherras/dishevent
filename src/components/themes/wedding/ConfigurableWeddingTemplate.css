@@ -1,0 +1,101 @@
+/* ConfigurableWeddingTemplate.css */
+
+.configurable-wedding-template {
+  --primary-color: #97714A;
+  --secondary-color: #B29161;
+  --accent-color: #D5B88F;
+  --text-color: #333333;
+  --background-color: #FFFFFF;
+  --title-font: 'Playfair Display', serif;
+  --body-font: 'Raleway', sans-serif;
+  --title-size: 2.5rem;
+  --body-size: 1rem;
+}
+
+/* Base Styles */
+.configurable-wedding-template {
+  color: var(--text-color);
+  font-family: var(--body-font);
+}
+
+/* Typography */
+.configurable-wedding-template .title {
+  color: var(--text-color);
+  font-family: var(--title-font);
+  font-size: var(--title-size);
+}
+
+.configurable-wedding-template .subtitle {
+  color: var(--text-color);
+  font-family: var(--body-font);
+  font-size: calc(var(--body-size) * 1.25);
+}
+
+/* Sections */
+.configurable-wedding-template .section-title {
+  color: var(--primary-color);
+}
+
+.configurable-wedding-template .section-label {
+  color: var(--secondary-color);
+}
+
+/* Buttons */
+.configurable-wedding-template .primary-button {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Animations */
+.configurable-wedding-template .animate-fade-in {
+  animation: fadeIn 1s ease-in;
+}
+
+.configurable-wedding-template .animate-fade-in-up {
+  animation: fadeInUp 1s ease-out;
+}
+
+.configurable-wedding-template .delay-300 {
+  animation-delay: 300ms;
+}
+
+.configurable-wedding-template .delay-500 {
+  animation-delay: 500ms;
+}
+
+.configurable-wedding-template .delay-700 {
+  animation-delay: 700ms;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Layout Styles */
+.configurable-wedding-template.wedding-elegant {
+  /* Elegant style specific styles */
+}
+
+.configurable-wedding-template.wedding-modern {
+  /* Modern style specific styles */
+}
+
+.configurable-wedding-template.wedding-minimalist {
+  /* Minimalist style specific styles */
+}

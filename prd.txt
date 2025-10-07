@@ -1,0 +1,250 @@
+📌 Product Requirements Document (PRD)
+
+Product: DiShEvent: A Digital Shareable Event (Web-Based Application)
+Platform: Next.js + Firebase (Firestore, Storage, Auth)
+Audience: Individuals (weddings, birthdays, small events) & later, professionals (event planners, corporate organizers)
+Monetization: Free tier + Pay-Per-Event upgrades (future subscriptions for power users)
+
+1. 🎯 Goals & Objectives
+
+Provide a platform for users to create, share, and manage event invitations digitally.
+
+Enable guests to RSVP online via unique shareable links.
+
+Allow customization with templates and themes.
+
+Offer an easy-to-understand free plan with the ability to upgrade events individually.
+
+Build a scalable system that can later support subscriptions and partnerships.
+
+2. 👥 Target Users
+
+Primary Users (Individuals):
+
+Couples hosting weddings
+
+Parents hosting birthdays
+
+Families hosting graduations, reunions
+
+Small parties and gatherings
+
+Secondary Users (Future Expansion):
+
+Event planners
+
+Corporate organizers
+
+Agencies/venues offering digital invites
+
+3. 📦 Key Features
+3.1 Event Creation
+
+Create an event (wedding, birthday, corporate, etc.).
+
+Event form fields: title, description, date, time, location, theme, cover image.
+
+Extra fields by event type (inside extraFields)
+
+Wedding: brideName, groomName, ceremonyLocation, receptionLocation, dressCode
+
+Birthday: celebrantName, age, theme, giftPreferences
+
+Corporate: organizationName, agenda, speakerList, sponsorList
+
+3.2 Event Page (Public)
+
+Unique shareable URL: /invite/{eventId}
+
+Responsive template (mobile-first).
+
+Event details displayed with selected theme/template.
+
+RSVP form for guests.
+
+3.3 Guest Management
+
+Guest list stored per event.
+
+RSVP responses: Yes / No / Maybe (+ number of attendees).
+
+Export guest list (CSV/Excel – premium feature).
+
+3.4 Analytics (Premium Feature)
+
+Track views & RSVPs per event.
+
+Daily unique visitors.
+
+RSVP counts (Yes, No, Maybe).
+
+3.5 Authentication
+
+Firebase Auth (Email/Google).
+
+User profile with subscription status.
+
+3.6 Templates & Themes
+
+Admin-managed templates in Firestore.
+
+Users can choose template + color scheme.
+
+Premium templates available only on upgrade.
+
+3.7 Monetization
+
+Free Plan:
+
+1 event
+
+Up to 50 guests
+
+Basic template
+
+Watermark
+
+Pay-Per-Event Upgrade:
+
+Basic Upgrade ($9.99/event): 200 guests, no watermark, more templates
+
+Premium Upgrade ($19.99/event): unlimited guests, premium templates, analytics, guest export
+
+3.8 Future Features (Phase 2+)
+
+Custom domains for events.
+
+SMS/email invite integration.
+
+QR code guest check-in.
+
+Multi-language support.
+
+Event reminders.
+
+4. 🏗️ Architecture & Database
+4.1 Tech Stack
+
+Frontend: Next.js (App Router, TailwindCSS)
+
+Backend: Firebase Firestore, Firebase Storage
+
+Auth: Firebase Authentication
+
+Payments: Stripe (one-time event upgrade)
+
+Hosting: Vercel (frontend), Firebase (functions if needed)
+
+4.2 Database Schema
+
+Users (users/{userId})
+
+name, email, subscriptionPlan, subscriptionStatus, createdAt
+
+Events (events/{eventId})
+
+ownerId, eventType, title, description, date, time, location, theme, visibility, shareUrl, maxGuests, extraFields, createdAt
+
+Guests (events/{eventId}/guests/{guestId})
+
+name, email, phone, response, numOfAttendees, note, invitedAt, respondedAt
+
+Analytics (events/{eventId}/analytics/{dayId})
+
+date, views, uniqueVisitors, rsvpCount
+
+EventTemplates (eventTemplates/{templateId})
+
+name, eventType, thumbnail, defaultColors, layoutConfig, isActive
+
+5. 🖥️ User Flows
+5.1 Event Host (User)
+
+Sign up (Google/Email).
+
+Create event → Fill in details.
+
+Publish → Get unique link.
+
+Share with guests.
+
+Manage RSVPs in dashboard.
+
+If free limit reached → prompt upgrade.
+
+5.2 Guest
+
+Open shared link.
+
+View event details.
+
+RSVP → response saved in Firestore.
+
+5.3 Upgrade Flow
+
+User tries to add >50 guests or premium template.
+
+Modal: “Upgrade event for $9.99 / $19.99”.
+
+Stripe checkout → on success, mark event as upgraded.
+
+Unlock premium features for that event.
+
+6. 📊 Monetization Plan
+Free Tier
+
+1 event
+
+10 guests
+
+Basic template
+
+Watermark
+
+Pay-Per-Event (One-Time)
+
+Basic Upgrade: $9.99
+
+Premium Upgrade: $19.99
+
+Future Subscription (Phase 2)
+
+Starter: $7/month → 3 events, 100 guests, no watermark
+
+Premium: $19/month → unlimited events/guests, analytics
+
+Business: $49/month → corporate planners, white-label
+
+7. ⏱️ Timeline (MVP First 3 Months)
+Week	Milestone
+1–2	Setup Next.js, Firebase integration, Auth
+3–4	Event creation form + Firestore schema
+5	Public event page + RSVP form
+6	Guest list dashboard
+7	Stripe one-time payment integration
+8	Premium features (templates, analytics)
+9–10	Testing & polish (mobile, SEO, error states)
+11	Deployment (Vercel + Firebase)
+12	Marketing launch (free tier + paid events)
+8. 📌 Success Metrics (KPIs)
+
+Activation: % of users creating an event after signup.
+
+Engagement: Avg. number of guests per event.
+
+Conversion: % of free events upgraded to paid.
+
+Revenue: Average revenue per event.
+
+Retention: % of users returning to create another event.
+
+9. 🚀 Risks & Mitigation
+
+Risk: Users stick to free tier only.
+→ Mitigation: Set attractive guest limits & watermark nudges.
+
+Risk: Competition from Canva, Evite, Paperless Post.
+→ Mitigation: Focus on simplicity + RSVP management + mobile-first experience.
+
+Risk: Payment friction.
+→ Mitigation: Stripe checkout with multiple payment options.

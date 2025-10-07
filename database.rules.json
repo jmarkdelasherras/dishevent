@@ -1,0 +1,46 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid || auth.token.admin === true",
+        ".write": "$uid === auth.uid || auth.token.admin === true",
+        "profile": {
+          ".read": "auth != null",
+          ".write": "$uid === auth.uid || auth.token.admin === true"
+        },
+        "events": {
+          ".read": "$uid === auth.uid || auth.token.admin === true",
+          ".write": "$uid === auth.uid || auth.token.admin === true"
+        }
+      }
+    },
+    "events": {
+      "$eventId": {
+        ".read": "data.child('visibility').val() === 'public' || (auth != null && (data.child('creatorUid').val() === auth.uid || root.child('events/' + $eventId + '/guests/' + auth.uid).exists()))",
+        ".write": "auth != null && (!data.exists() || data.child('creatorUid').val() === auth.uid)",
+        "guests": {
+          "$guestUid": {
+            ".read": "$guestUid === auth.uid || auth != null && root.child('events/' + $eventId + '/creatorUid').val() === auth.uid",
+            ".write": "$guestUid === auth.uid || auth != null && root.child('events/' + $eventId + '/creatorUid').val() === auth.uid"
+          }
+        },
+        "rsvps": {
+          ".read": "auth != null && (data.parent().child('creatorUid').val() === auth.uid || root.child('events/' + $eventId + '/guests/' + auth.uid).exists())",
+          ".write": "auth != null && (root.child('events/' + $eventId + '/guests/' + auth.uid).exists() || data.parent().child('creatorUid').val() === auth.uid)"
+        }
+      }
+    },
+    "invites": {
+      "$inviteId": {
+        ".read": true,
+        ".write": "auth != null && (!data.exists() || data.child('creatorUid').val() === auth.uid)"
+      }
+    },
+    "templates": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.admin === true"
+    }
+  }
+}

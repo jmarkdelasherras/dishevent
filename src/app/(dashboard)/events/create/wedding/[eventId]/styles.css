@@ -1,0 +1,15 @@
+/* Add this at the beginning of the file, after the existing imports */
+.form-input {
+  @apply px-3 py-2 text-gray-900;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+input[type="email"],
+input[type="color"],
+textarea,
+select {
+  @apply px-3 py-2 text-gray-900;
+}

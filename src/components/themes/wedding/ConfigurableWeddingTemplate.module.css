@@ -1,0 +1,73 @@
+.configurableWeddingTemplate {
+  font-family: var(--body-font, 'Raleway', sans-serif);
+  color: var(--text-color, #333333);
+}
+
+/* Typography */
+.title {
+  font-family: var(--title-font, 'Playfair Display', serif);
+  font-size: var(--title-size, 2.5rem);
+  color: var(--text-color, #333333);
+}
+
+.subtitle {
+  font-family: var(--body-font, 'Raleway', sans-serif);
+  font-size: calc(var(--body-size, 1rem) * 1.25);
+  color: var(--text-color, #333333);
+}
+
+/* Section styles */
+.sectionTitle {
+  color: var(--primary-color, #97714A);
+}
+
+.sectionLabel {
+  color: var(--secondary-color, #B29161);
+}
+
+/* Button styles */
+.primaryButton {
+  background-color: var(--primary-color, #97714A);
+  color: white;
+}
+
+/* Animation classes */
+.animateFadeIn {
+  animation: fadeIn 1s ease-in;
+}
+
+.animateFadeInUp {
+  animation: fadeInUp 1s ease-out;
+}
+
+.delay300 {
+  animation-delay: 300ms;
+}
+
+.delay500 {
+  animation-delay: 500ms;
+}
+
+.delay700 {
+  animation-delay: 700ms;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

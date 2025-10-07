@@ -1,0 +1,23 @@
+.firebase-test-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  background-color: white !important;
+  color: black !important;
+}
+
+.firebase-test-progress-container {
+  width: 100%;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  height: 0.625rem;
+  margin-bottom: 0.5rem;
+}
+
+.firebase-test-progress-bar {
+  background-color: #2563eb;
+  height: 0.625rem;
+  border-radius: 9999px;
+  transition: width 0.3s ease-in-out;
+}
