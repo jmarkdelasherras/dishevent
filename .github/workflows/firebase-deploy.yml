@@ -78,8 +78,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: development
-    # Check if required secrets are available
-    if: ${{ secrets.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != '' }}
     steps:
       # Check for required secrets
       - name: Verify required secrets are available
