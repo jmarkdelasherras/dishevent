@@ -18,7 +18,9 @@ const firebaseConfig = {
 };
 
 // Check if Firebase config is missing (in development environment)
-if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'undefined') {
+if ((!firebaseConfig.apiKey || firebaseConfig.apiKey === 'undefined') && 
+    process.env.NODE_ENV === 'development' && 
+    typeof window !== 'undefined') {
   console.error(
     'Firebase configuration error: Environment variables are missing.\n' +
     'Create a .env.local file with your Firebase config.\n' +

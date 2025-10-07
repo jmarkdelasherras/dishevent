@@ -64,11 +64,12 @@ export const adminAuth = admin.apps.length ? admin.auth() : null;
 export const adminFirestore = admin.apps.length ? admin.firestore() : null;
 
 // Log admin initialization status at export time for debugging
-console.log(`Firebase Admin SDK initialization status: ${admin.apps.length ? 'INITIALIZED' : 'NOT INITIALIZED'}`);
-if (!admin.apps.length) {
-  console.warn('WARNING: Firebase Admin SDK is not initialized. Auth verification will fail!');
-  // Check if we're in local environment and print environment variables (without sensitive data)
-  if (process.env.NODE_ENV === 'development') {
+// Only log these messages during development, not during build
+if (process.env.NODE_ENV === 'development' && !isBuildTime) {
+  console.log(`Firebase Admin SDK initialization status: ${admin.apps.length ? 'INITIALIZED' : 'NOT INITIALIZED'}`);
+  if (!admin.apps.length) {
+    console.warn('WARNING: Firebase Admin SDK is not initialized. Auth verification will fail!');
+    // Check if we're in local environment and print environment variables (without sensitive data)
     console.log('Environment variables check:');
     console.log('- FIREBASE_SERVICE_ACCOUNT_KEY present:', !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
     if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
