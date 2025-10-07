@@ -4,12 +4,7 @@ This guide explains how to set up GitHub repository secrets for the DisheEvent C
 
 ## Overview
 
-The CI/CD pipeline uses GitHub Actions to automate building, testing, and deploying your application to Firebase App Hosting. The workflow is branch-based:
-
-- Push or merge to `dev` branch → Automatic deployment to the development environment
-- Push or merge to `master`/`main` branch → Automatic deployment to the production environment
-
-To keep your sensitive credentials secure, you need to set up secrets in your GitHub repository.
+The CI/CD pipeline uses GitHub Actions to automate building, testing, and deploying your application to Firebase App Hosting. To keep your sensitive credentials secure, you need to set up secrets in your GitHub repository.
 
 ## Required Secrets
 
@@ -109,13 +104,3 @@ If you add or rename any secrets, remember to update the corresponding reference
 ## Testing Your Setup
 
 After setting up all secrets, you can manually trigger a workflow from the **Actions** tab in your GitHub repository to test if everything is configured correctly.
-
-## Local Environment Cleanup
-
-To clean up sensitive environment files before committing to Git, use the provided cleanup script:
-
-```bash
-./scripts/cleanup-env.sh
-```
-
-This script removes all environment files and service account files that shouldn't be committed to your repository.

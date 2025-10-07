@@ -1,8 +1,0 @@
-{
-  "projects": {
-    "default": "dishevent-proj001",
-    "dev": "dishevent-dev"
-  },
-  "targets": {},
-  "etags": {}
-}

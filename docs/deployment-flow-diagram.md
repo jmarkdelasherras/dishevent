@@ -23,7 +23,7 @@
 1. **Developer creates or updates code locally**
    - Makes changes to the codebase
    - Tests locally with `npm run dev`
-   - Runs `npm run cleanup` to remove sensitive files
+   - Runs `npm run clean` to remove sensitive files
 
 2. **Code pushed to GitHub repository**
    - `git push origin dev` for development environment
@@ -66,15 +66,15 @@
 
 ```
 Code Push to 'dev' → GitHub Actions → Build with Dev Secrets →
-Copy firebase.dev.json & apphosting.dev.yaml →
+Update Google Cloud Secrets → Prepare firebase.dev.json & apphosting.dev.yaml →
 Deploy to Firebase Dev Project → Development Site Live
 ```
 
 ### Production Environment (`main`/`master` branch)
 
 ```
-Code Push to 'main' → GitHub Actions → Build with Prod Secrets →
-Copy firebase.prod.json & apphosting.prod.yaml →
+Code Push to 'main'/'master' → GitHub Actions → Build with Prod Secrets →
+Update Google Cloud Secrets → Prepare firebase.prod.json & apphosting.prod.yaml →
 Deploy to Firebase Prod Project → Production Site Live
 ```
 

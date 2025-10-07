@@ -2,111 +2,13 @@
   "name": "dishevent",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "overrides": {
-    "@firebase/ai": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/app": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/auth": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/app-check": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/app-check-compat": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/app-compat": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/auth-compat": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/component": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/database": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/database-compat": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/firestore": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/firestore-compat": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/functions": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/functions-compat": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/logger": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/storage": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/storage-compat": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    },
-    "@firebase/util": {
-      "engines": {
-        "node": ">=18.0.0"
-      }
-    }
-  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "cleanup": "bash ./scripts/cleanup-env.sh",
-    "deploy:dev": "cp firebase.dev.json firebase.json && cp apphosting.dev.yaml apphosting.yaml && firebase deploy --only apphosting --project dishevent-dev",
-    "deploy:prod": "cp firebase.prod.json firebase.json && cp apphosting.prod.yaml apphosting.yaml && firebase deploy --only apphosting --project dishevent-prod",
-    "deploy:rules:dev": "cp firebase.dev.json firebase.json && firebase deploy --only database --project dishevent-dev",
-    "prepare-commit": "npm run cleanup"
+    "lint": "eslint",
+    "clean": "scripts/cleanup.sh",
+    "deploy:rules:dev": "cp firebase.dev.json firebase.json && firebase deploy --only database --project dishevent-dev"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

@@ -6,12 +6,7 @@ const isBrowser = typeof window !== 'undefined';
 
 // Check for build-time vs runtime
 // NEXT_PHASE is set during Next.js build process
-const isBuildTime = 
-  process.env.NEXT_PHASE === 'phase-production-build' || 
-  process.env.NEXT_PHASE === 'phase-production-prebuild' ||
-  process.env.SKIP_FIREBASE_INIT === 'true';
-
-console.log('Firebase Admin SDK initialization status:', !isBrowser && !isBuildTime ? 'INITIALIZING' : 'NOT INITIALIZED');
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || process.env.NEXT_PHASE === 'phase-production-prebuild';
 
 // Skip Firebase Admin initialization during build or in browser
 if (!admin.apps.length && !isBrowser && !isBuildTime) {
