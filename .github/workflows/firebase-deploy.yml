@@ -78,7 +78,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: development
+    # Check if required secrets are available
+    if: ${{ secrets.GCP_PROJECT_ID != '' && secrets.GCP_SA_KEY != '' }}
     steps:
+      # Check for required secrets
+      - name: Verify required secrets are available
+        run: |
+          if [ -z "${{ secrets.GCP_PROJECT_ID }}" ]; then
+            echo "Error: GCP_PROJECT_ID secret is required but not set."
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "Error: GCP_SA_KEY secret is required but not set."
+            exit 1
+          fi
       - uses: actions/checkout@v4
       
       - name: Download build artifact
@@ -86,38 +100,59 @@ jobs:
         with:
           name: build-output
           
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
-          
+        
       # Update secrets in Google Cloud Secret Manager if needed
       - name: Update Google Cloud Secrets (if changed)
         run: |
-          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" ]]; then
+          # First ensure we're using the right project
+          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+          
+          # Update Firebase API key secret if provided
+          if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" ]; then
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" | gcloud secrets versions add firebase_api_key_dev --data-file=- || true
           fi
-          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" ]]; then
+          
+          # Update Firebase Auth Domain secret if provided
+          if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" ]; then
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" | gcloud secrets versions add firebase_auth_domain_dev --data-file=- || true
           fi
-          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" ]]; then
+          
+          # Update Firebase Project ID secret if provided
+          if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" ]; then
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" | gcloud secrets versions add firebase_project_id_dev --data-file=- || true
           fi
-          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" ]]; then
+          
+          # Update Firebase Storage Bucket secret if provided
+          if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" ]; then
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" | gcloud secrets versions add firebase_storage_bucket_dev --data-file=- || true
           fi
-          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" ]]; then
+          
+          # Update Firebase Messaging Sender ID secret if provided
+          if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" ]; then
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" | gcloud secrets versions add firebase_messaging_sender_id_dev --data-file=- || true
           fi
-          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" ]]; then
+          
+          # Update Firebase App ID secret if provided
+          if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" ]; then
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" | gcloud secrets versions add firebase_app_id_dev --data-file=- || true
           fi
-          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" ]]; then
+          
+          # Update Firebase Measurement ID secret if provided
+          if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" ]; then
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" | gcloud secrets versions add firebase_measurement_id_dev --data-file=- || true
           fi
-          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}" ]]; then
+          
+          # Update Firebase Service Account secret if provided
+          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}" ]; then
             echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}" | gcloud secrets versions add firebase_service_account_dev --data-file=- || true
           fi
       
@@ -128,6 +163,8 @@ jobs:
         run: |
           cp firebase.dev.json firebase.json
           cp apphosting.dev.yaml apphosting.yaml
-          firebase deploy --only apphosting --project ${{ secrets.FIREBASE_PROJECT_ID_DEV }} --non-interactive
+          
+          # Use the access token from Google auth directly
+          firebase deploy --only apphosting --project ${{ secrets.GCP_PROJECT_ID }} --non-interactive
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
