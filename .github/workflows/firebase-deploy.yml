@@ -109,53 +109,77 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         
       # Update secrets in Google Cloud Secret Manager if needed
-      - name: Update Google Cloud Secrets (if changed)
+      - name: Create and Update Google Cloud Secrets
         run: |
           # First ensure we're using the right project
           gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
           
-          # Update Firebase API key secret if provided
+          # Create and update Firebase API key secret if provided
           if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" ]; then
+            gcloud secrets create firebase_api_key_dev --replication-policy="automatic" --quiet || true
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" | gcloud secrets versions add firebase_api_key_dev --data-file=- || true
           fi
           
-          # Update Firebase Auth Domain secret if provided
+          # Create and update Firebase Auth Domain secret if provided
           if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" ]; then
+            gcloud secrets create firebase_auth_domain_dev --replication-policy="automatic" --quiet || true
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" | gcloud secrets versions add firebase_auth_domain_dev --data-file=- || true
           fi
           
-          # Update Firebase Project ID secret if provided
+          # Create and update Firebase Project ID secret if provided
           if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" ]; then
+            gcloud secrets create firebase_project_id_dev --replication-policy="automatic" --quiet || true
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" | gcloud secrets versions add firebase_project_id_dev --data-file=- || true
           fi
           
-          # Update Firebase Storage Bucket secret if provided
+          # Create and update Firebase Storage Bucket secret if provided
           if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" ]; then
+            gcloud secrets create firebase_storage_bucket_dev --replication-policy="automatic" --quiet || true
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" | gcloud secrets versions add firebase_storage_bucket_dev --data-file=- || true
           fi
           
-          # Update Firebase Messaging Sender ID secret if provided
+          # Create and update Firebase Messaging Sender ID secret if provided
           if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" ]; then
+            gcloud secrets create firebase_messaging_sender_id_dev --replication-policy="automatic" --quiet || true
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" | gcloud secrets versions add firebase_messaging_sender_id_dev --data-file=- || true
           fi
           
-          # Update Firebase App ID secret if provided
+          # Create and update Firebase App ID secret if provided
           if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" ]; then
+            gcloud secrets create firebase_app_id_dev --replication-policy="automatic" --quiet || true
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" | gcloud secrets versions add firebase_app_id_dev --data-file=- || true
           fi
           
-          # Update Firebase Measurement ID secret if provided
+          # Create and update Firebase Measurement ID secret if provided
           if [ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" ]; then
+            gcloud secrets create firebase_measurement_id_dev --replication-policy="automatic" --quiet || true
             echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" | gcloud secrets versions add firebase_measurement_id_dev --data-file=- || true
           fi
           
-          # Update Firebase Service Account secret if provided
+          # Create and update Firebase Service Account secret if provided
           if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}" ]; then
+            gcloud secrets create firebase_service_account_dev --replication-policy="automatic" --quiet || true
             echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}" | gcloud secrets versions add firebase_service_account_dev --data-file=- || true
           fi
       
       - name: Setup Firebase CLI
         run: npm install -g firebase-tools@latest
+        
+      # Fix permissions for Firebase deployment
+      - name: Ensure Service Account has Firebase Admin role
+        run: |
+          # Grant the service account Firebase Admin role if needed
+          SERVICE_ACCOUNT="github-access-workflows-001@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
+          gcloud projects add-iam-policy-binding ${{ secrets.GCP_PROJECT_ID }} \
+            --member="serviceAccount:$SERVICE_ACCOUNT" \
+            --role="roles/firebase.admin" \
+            --condition=None || true
+            
+          # Also add Editor role which might be needed for some operations
+          gcloud projects add-iam-policy-binding ${{ secrets.GCP_PROJECT_ID }} \
+            --member="serviceAccount:$SERVICE_ACCOUNT" \
+            --role="roles/editor" \
+            --condition=None || true
         
       - name: Deploy to Firebase App Hosting (Development)
         run: |
@@ -163,6 +187,6 @@ jobs:
           cp apphosting.dev.yaml apphosting.yaml
           
           # Use the access token from Google auth directly
-          firebase deploy --only apphosting --project ${{ secrets.GCP_PROJECT_ID }} --non-interactive
+          firebase deploy --only apphosting --project ${{ secrets.GCP_PROJECT_ID }} --non-interactive --debug
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
