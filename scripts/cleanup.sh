@@ -1,23 +1,40 @@
 #!/bin/bash
 
-# Script to clean up unnecessary files before pushing to GitHub
+# Cleanup script for DisheEvent project
+# Removes sensitive and unnecessary files before deployment or commit
 
-# Remove any service account or key files
+echo "🧹 Starting cleanup process..."
+
+# Remove service account files and keys
+echo "Removing service account files..."
 rm -f service-account*.json
+rm -f *-service-account*.json
 rm -f *-key.txt
-rm -f serviceAccountKey*.json
-rm -f firebase-adminsdk*.json
 rm -f formatted-*-key.txt
 
-# Remove environment files with potential secrets
-rm -f .env
-rm -f .env.local
-rm -f .env.*.local
-
-# Remove any files generated during testing or deployment
+# Remove temporary Firebase files
+echo "Removing Firebase temporary files..."
 rm -f firebase-debug.log
+rm -f firebase-debug.*.log
 rm -f ui-debug.log
-rm -f .firebase/*.cache
-rm -f .firebaserc
+rm -rf .firebase/
 
-echo "✅ Cleaned up sensitive and unnecessary files."
+# Remove build artifacts that should be generated fresh
+echo "Removing build artifacts..."
+rm -rf .next/
+rm -rf out/
+rm -rf build/
+
+# Remove temporary files
+echo "Removing temporary files..."
+rm -f *.tmp
+rm -rf .temp/
+rm -rf .tmp/
+rm -rf .cache/
+
+# Remove any backup files
+echo "Removing backup files..."
+rm -f *.bak
+rm -f *~
+
+echo "✅ Cleanup complete!"

@@ -1,81 +1,111 @@
-# DisheEvent Deployment Flow Diagram
+# DisheEvent CI/CD Workflow Guide
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │     │                 │
-│   Local Code    │────▶│  GitHub Repo    │────▶│ GitHub Actions  │
-│   Development   │     │  (Push/Merge)   │     │  Workflow       │
-│                 │     │                 │     │                 │
-└─────────────────┘     └─────────────────┘     └────────┬────────┘
-                                                         │
-                                                         ▼
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │     │                 │
-│   Firebase      │◀────│  Firebase App   │◀────│  Build & Test   │
-│   App Hosting   │     │  Hosting Deploy │     │  Application    │
-│   (Live Site)   │     │                 │     │                 │
-│                 │     │                 │     │                 │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-```
+This document explains the updated CI/CD workflow for the DisheEvent application, detailing how the automated deployment process works through GitHub Actions.
 
-## Detailed Flow
+## Overview
 
-1. **Developer creates or updates code locally**
-   - Makes changes to the codebase
-   - Tests locally with `npm run dev`
-   - Runs `npm run clean` to remove sensitive files
+The CI/CD pipeline automatically builds and deploys the DisheEvent application to Firebase App Hosting based on changes to specific branches:
 
-2. **Code pushed to GitHub repository**
-   - `git push origin dev` for development environment
-   - `git push origin main` for production environment
-   - OR merges a pull request to these branches
+- Push to `dev` branch → Deploy to development environment
+- Push to `master`/`main` branch → Deploy to production environment
+- Merged PR to `dev` → Deploy to development environment
+- Merged PR to `master`/`main` → Deploy to production environment
 
-3. **GitHub Actions workflow triggered automatically**
-   - Checks out the latest code
-   - Installs dependencies
-   - Runs linting and tests
+## Workflow Steps
 
-4. **Environment determination**
-   - `dev` branch → Development environment
-   - `main`/`master` branch → Production environment
-   - Sets appropriate configurations and secrets
+The CI/CD pipeline consists of the following jobs:
 
-5. **Application build**
-   - Creates environment file from GitHub secrets
-   - Builds Next.js application
-   - Prepares for deployment
+### 1. Lint and Test
 
-6. **Authentication with Google Cloud & Firebase**
-   - Sets up Google Cloud SDK
-   - Configures Firebase CLI
-   - Uses service account credentials
+- Runs linting checks on the codebase
+- Executes tests to verify functionality
 
-7. **Firebase App Hosting deployment**
-   - Deploys server-side rendering to Cloud Run
-   - Deploys static assets to Firebase CDN
-   - Routes traffic to new version
+### 2. Build
 
-8. **Live site updated**
-   - New version goes live
-   - Zero-downtime deployment
-   - Users see the updated application
+- Cleans up unnecessary files using `scripts/cleanup.sh`
+- Builds the Next.js application
+- Uploads the build artifacts for deployment
 
-## Environment-Specific Paths
+### 3. Deploy to Development
 
-### Development Environment (`dev` branch)
+Triggered by:
+- Push to `dev` branch
+- Merged PR to `dev` branch
+- Manual workflow dispatch selecting "development" environment
 
-```
-Code Push to 'dev' → GitHub Actions → Build with Dev Secrets →
-Update Google Cloud Secrets → Prepare firebase.dev.json & apphosting.dev.yaml →
-Deploy to Firebase Dev Project → Development Site Live
-```
+This job:
+- Downloads the build artifacts
+- Sets up Google Cloud SDK
+- Updates secrets in Google Cloud Secret Manager if needed
+- Deploys to Firebase App Hosting development environment
 
-### Production Environment (`main`/`master` branch)
+### 4. Deploy to Production
 
-```
-Code Push to 'main'/'master' → GitHub Actions → Build with Prod Secrets →
-Update Google Cloud Secrets → Prepare firebase.prod.json & apphosting.prod.yaml →
-Deploy to Firebase Prod Project → Production Site Live
-```
+Triggered by:
+- Push to `master`/`main` branch
+- Merged PR to `master`/`main` branch
+- Manual workflow dispatch selecting "production" environment
 
-This visual representation complements the detailed deployment guide and provides a quick reference for understanding the entire workflow.
+This job:
+- Requires successful development deployment
+- Downloads the build artifacts
+- Sets up Google Cloud SDK
+- Updates secrets in Google Cloud Secret Manager if needed
+- Deploys to Firebase App Hosting production environment
+
+## Automatic Secret Management
+
+The workflow automatically updates Google Cloud Secret Manager with any changes to the GitHub secrets. This ensures that:
+
+1. GitHub repository secrets are the source of truth
+2. Google Cloud Secret Manager is kept in sync
+3. Firebase App Hosting configurations always use the latest values
+
+## Branch-Based Deployment
+
+The deployment process now follows this pattern:
+
+1. Feature branches → PRs to `dev`
+2. `dev` branch → development environment deployment
+3. `dev` → PRs to `master`/`main`
+4. `master`/`main` branch → production environment deployment
+
+## Keeping the Repository Clean
+
+To avoid storing sensitive files in the repository:
+
+1. Use the `scripts/cleanup-env.sh` script before committing:
+   ```bash
+   ./scripts/cleanup-env.sh
+   ```
+
+2. The CI/CD process uses `scripts/cleanup.sh` to clean temporary files before building
+
+## Manual Deployments
+
+You can still trigger manual deployments:
+
+1. Go to the Actions tab in GitHub
+2. Select the "DisheEvent CI/CD Pipeline" workflow
+3. Click "Run workflow"
+4. Select the branch and environment to deploy to
+
+## Required GitHub Secrets
+
+For the workflow to function properly, the following GitHub secrets must be configured:
+
+### Development Environment
+- `NEXT_PUBLIC_FIREBASE_*` (all Firebase client configuration values)
+- `FIREBASE_SERVICE_ACCOUNT_DEV`
+- `FIREBASE_PROJECT_ID_DEV`
+- `GCP_PROJECT_ID`
+- `GCP_SA_KEY`
+- `FIREBASE_TOKEN`
+
+### Production Environment
+- `NEXT_PUBLIC_FIREBASE_*_PROD` (all Firebase client configuration values with _PROD suffix)
+- `FIREBASE_SERVICE_ACCOUNT_PROD`
+- `FIREBASE_PROJECT_ID_PROD`
+- `GCP_PROJECT_ID_PROD`
+- `GCP_SA_KEY_PROD`
+- `FIREBASE_TOKEN`

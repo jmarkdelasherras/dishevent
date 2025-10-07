@@ -4,6 +4,7 @@ on:
   push:
     branches: [ master, main, dev ]
   pull_request:
+    types: [ closed ]
     branches: [ master, main, dev ]
   workflow_dispatch:
     inputs:
@@ -37,11 +38,9 @@ jobs:
       - name: Run tests
         run: npm run test:ci || true
         
-  build-dev:
+  build:
     needs: lint-and-test
-    if: ${{ github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'development') }}
     runs-on: ubuntu-latest
-    environment: development
     steps:
       - uses: actions/checkout@v3
       
@@ -53,81 +52,32 @@ jobs:
           
       - name: Install dependencies
         run: npm ci
-        
-      - name: Create .env file for development build
-        run: |
-          echo "NEXT_PUBLIC_APP_ENV=development" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" >> .env.local
-        
-      - name: Build application for development
-        run: npm run build
-        
-      - name: Upload development build artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-dev-output
-          path: |
-            .next
-            public
-            package.json
-            next.config.ts
-            server.js
-            firebase.dev.json
-            apphosting.dev.yaml
-  
-  build-prod:
-    needs: lint-and-test
-    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production') }}
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v3
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Create .env file for production build
+      - name: Run cleanup script
         run: |
-          echo "NEXT_PUBLIC_APP_ENV=production" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY_PROD }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_PROD }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID_PROD }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET_PROD }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID_PROD }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID_PROD }}" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID_PROD }}" >> .env.local
-        
-      - name: Build application for production
+          chmod +x scripts/cleanup.sh
+          ./scripts/cleanup.sh
+      
+      - name: Build application
         run: npm run build
         
-      - name: Upload production build artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: build-prod-output
+          name: build-output
           path: |
             .next
             public
             package.json
             next.config.ts
-            server.js
-            firebase.prod.json
-            apphosting.prod.yaml
+            scripts
             
   deploy-development:
-    needs: build-dev
-    if: ${{ github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'development') }}
+    needs: build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/dev') || 
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'dev') || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'development')
     runs-on: ubuntu-latest
     environment: development
     steps:
@@ -136,44 +86,60 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-dev-output
+          name: build-output
           
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID_DEV }}
-          service_account_key: ${{ secrets.GCP_SA_KEY_DEV }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
           export_default_credentials: true
-      
-      - name: Update Google Cloud Secrets
+          
+      # Update secrets in Google Cloud Secret Manager if needed
+      - name: Update Google Cloud Secrets (if changed)
         run: |
-          # This step ensures all secrets are updated in Google Cloud Secret Manager
-          gcloud secrets versions add firebase_api_key_dev --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}") --project ${{ secrets.GCP_PROJECT_ID_DEV }}
-          gcloud secrets versions add firebase_auth_domain_dev --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}") --project ${{ secrets.GCP_PROJECT_ID_DEV }}
-          gcloud secrets versions add firebase_project_id_dev --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}") --project ${{ secrets.GCP_PROJECT_ID_DEV }}
-          gcloud secrets versions add firebase_storage_bucket_dev --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}") --project ${{ secrets.GCP_PROJECT_ID_DEV }}
-          gcloud secrets versions add firebase_messaging_sender_id_dev --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}") --project ${{ secrets.GCP_PROJECT_ID_DEV }}
-          gcloud secrets versions add firebase_app_id_dev --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}") --project ${{ secrets.GCP_PROJECT_ID_DEV }}
-          gcloud secrets versions add firebase_measurement_id_dev --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}") --project ${{ secrets.GCP_PROJECT_ID_DEV }}
-          gcloud secrets versions add firebase_service_account_dev --data-file=<(echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}') --project ${{ secrets.GCP_PROJECT_ID_DEV }}
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}" | gcloud secrets versions add firebase_api_key_dev --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}" | gcloud secrets versions add firebase_auth_domain_dev --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}" | gcloud secrets versions add firebase_project_id_dev --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}" | gcloud secrets versions add firebase_storage_bucket_dev --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}" | gcloud secrets versions add firebase_messaging_sender_id_dev --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}" | gcloud secrets versions add firebase_app_id_dev --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}" | gcloud secrets versions add firebase_measurement_id_dev --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}" ]]; then
+            echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}" | gcloud secrets versions add firebase_service_account_dev --data-file=- || true
+          fi
       
-      - name: Prepare deployment files
+      - name: Setup Firebase CLI
+        run: npm install -g firebase-tools@latest
+        
+      - name: Deploy to Firebase App Hosting (Development)
         run: |
           cp firebase.dev.json firebase.json
           cp apphosting.dev.yaml apphosting.yaml
-      
-      - name: Deploy to Firebase App Hosting (Development)
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}'
-          channelId: 'live'
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID_DEV }}
-          target: 'app-hosting'
+          firebase deploy --only apphosting --project ${{ secrets.FIREBASE_PROJECT_ID_DEV }} --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           
   deploy-production:
-    needs: build-prod
-    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production') }}
+    needs: [build, deploy-development]
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) || 
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && (github.base_ref == 'master' || github.base_ref == 'main')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -182,7 +148,7 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v3
         with:
-          name: build-prod-output
+          name: build-output
           
       - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
@@ -190,29 +156,42 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID_PROD }}
           service_account_key: ${{ secrets.GCP_SA_KEY_PROD }}
           export_default_credentials: true
-      
-      - name: Update Google Cloud Secrets
+          
+      # Update secrets in Google Cloud Secret Manager if needed
+      - name: Update Google Cloud Secrets (if changed)
         run: |
-          # This step ensures all secrets are updated in Google Cloud Secret Manager
-          gcloud secrets versions add firebase_api_key_prod --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY_PROD }}") --project ${{ secrets.GCP_PROJECT_ID_PROD }}
-          gcloud secrets versions add firebase_auth_domain_prod --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_PROD }}") --project ${{ secrets.GCP_PROJECT_ID_PROD }}
-          gcloud secrets versions add firebase_project_id_prod --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID_PROD }}") --project ${{ secrets.GCP_PROJECT_ID_PROD }}
-          gcloud secrets versions add firebase_storage_bucket_prod --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET_PROD }}") --project ${{ secrets.GCP_PROJECT_ID_PROD }}
-          gcloud secrets versions add firebase_messaging_sender_id_prod --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID_PROD }}") --project ${{ secrets.GCP_PROJECT_ID_PROD }}
-          gcloud secrets versions add firebase_app_id_prod --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID_PROD }}") --project ${{ secrets.GCP_PROJECT_ID_PROD }}
-          gcloud secrets versions add firebase_measurement_id_prod --data-file=<(echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID_PROD }}") --project ${{ secrets.GCP_PROJECT_ID_PROD }}
-          gcloud secrets versions add firebase_service_account_prod --data-file=<(echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}') --project ${{ secrets.GCP_PROJECT_ID_PROD }}
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY_PROD }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY_PROD }}" | gcloud secrets versions add firebase_api_key_prod --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_PROD }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_PROD }}" | gcloud secrets versions add firebase_auth_domain_prod --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID_PROD }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID_PROD }}" | gcloud secrets versions add firebase_project_id_prod --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET_PROD }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET_PROD }}" | gcloud secrets versions add firebase_storage_bucket_prod --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID_PROD }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID_PROD }}" | gcloud secrets versions add firebase_messaging_sender_id_prod --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID_PROD }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID_PROD }}" | gcloud secrets versions add firebase_app_id_prod --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID_PROD }}" ]]; then
+            echo "${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID_PROD }}" | gcloud secrets versions add firebase_measurement_id_prod --data-file=- || true
+          fi
+          if [[ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}" ]]; then
+            echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}" | gcloud secrets versions add firebase_service_account_prod --data-file=- || true
+          fi
       
-      - name: Prepare deployment files
+      - name: Setup Firebase CLI
+        run: npm install -g firebase-tools@latest
+        
+      - name: Deploy to Firebase App Hosting (Production)
         run: |
           cp firebase.prod.json firebase.json
           cp apphosting.prod.yaml apphosting.yaml
-      
-      - name: Deploy to Firebase App Hosting (Production)
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}'
-          channelId: 'live'
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID_PROD }}
-          target: 'app-hosting'
+          firebase deploy --only apphosting --project ${{ secrets.FIREBASE_PROJECT_ID_PROD }} --non-interactive
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

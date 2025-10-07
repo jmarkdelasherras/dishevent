@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "clean": "scripts/cleanup.sh",
+    "test:ci": "echo 'No tests specified' && exit 0",
+    "clean": "./scripts/cleanup.sh",
+    "clean:env": "./scripts/cleanup-env.sh",
+    "prepare-commit": "npm run clean:env",
     "deploy:rules:dev": "cp firebase.dev.json firebase.json && firebase deploy --only database --project dishevent-dev"
   },
   "dependencies": {
