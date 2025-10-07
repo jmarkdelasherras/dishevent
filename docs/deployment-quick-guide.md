@@ -67,6 +67,58 @@ npm run deploy:rules:dev
 | Authentication error | Verify Firebase token and service account permissions |
 | Missing environment variables | Check GitHub Secrets are properly configured |
 | Deployment successful but site not updated | Check for routing issues or browser cache |
+| Node.js version warnings | Add engine overrides in package.json (see Troubleshooting) |
+| ESLint errors blocking build | Fix ESLint errors or update eslint.config.mjs rules |
+
+## Troubleshooting
+
+### Node.js Version Compatibility
+
+If you see Firebase package warnings about Node.js versions:
+
+```bash
+npm warn EBADENGINE Unsupported engine {
+  package: '@firebase/app@0.14.3',
+  required: { node: '>=20.0.0' },
+  current: { node: 'v18.20.8', npm: '10.8.2' }
+}
+```
+
+Add the following to your package.json:
+
+```json
+"engines": {
+  "node": ">=18.0.0"
+},
+"overrides": {
+  "@firebase/app": {
+    "engines": {
+      "node": ">=18.0.0"
+    }
+  },
+  "@firebase/auth": {
+    "engines": {
+      "node": ">=18.0.0"
+    }
+  }
+}
+```
+
+### ESLint Errors During Build
+
+If ESLint errors are failing your build, either:
+
+1. Fix the specific errors in your code
+2. Update eslint.config.mjs to make specific rules warnings instead of errors:
+
+```javascript
+{
+  rules: {
+    "react/no-unescaped-entities": "warn",
+    "@typescript-eslint/no-explicit-any": "warn"
+  }
+}
+```
 
 ## Need More Help?
 
