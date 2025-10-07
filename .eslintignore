@@ -1,0 +1,25 @@
+# Build directories
+.next/
+out/
+build/
+dist/
+
+# Node modules
+node_modules/
+
+# Config files
+next-env.d.ts
+next.config.*
+postcss.config.*
+tailwind.config.*
+
+# Firebase files
+firebase.*.json
+firebase.json
+firebase-debug.log
+
+# Test files (until fixed)
+src/app/invite/[eventId]/**/*.tsx
+src/app/invite/[eventId]/rsvp/**/*.tsx
+src/components/forms/CorporateEventForm.tsx
+src/components/themes/wedding/WeddingTemplateConfigurator.tsx
