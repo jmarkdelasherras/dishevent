@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+  // Disable prerendering for problematic pages
+  experimental: {
+    workerThreads: false,
+    cpus: 1
+  },
   images: {
     domains: [
       'lh3.googleusercontent.com',  // Google authentication profile images

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --no-lint",
-    "build:with-lint": "next build",
+    "build": "NEXT_PUBLIC_SKIP_FIREBASE_INIT=true next build --no-lint",
+    "build:with-lint": "NEXT_PUBLIC_SKIP_FIREBASE_INIT=true next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",

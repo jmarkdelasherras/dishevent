@@ -42,6 +42,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    // Skip auth state listener if auth is null (during build or SSR)
+    if (!auth) {
+      setIsLoading(false);
+      return () => {};
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setIsLoading(true);
       setUser(currentUser);

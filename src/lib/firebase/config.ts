@@ -1,9 +1,9 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { getDatabase } from 'firebase/database';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getDatabase, Database } from 'firebase/database';
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -28,13 +28,51 @@ if ((!firebaseConfig.apiKey || firebaseConfig.apiKey === 'undefined') &&
   );
 }
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
+// Check for build-time vs runtime
+// NEXT_PHASE is set during Next.js build process
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                  process.env.NEXT_PHASE === 'phase-production-prebuild';
+const skipFirebaseInit = process.env.NEXT_PUBLIC_SKIP_FIREBASE_INIT === 'true';
+const isBrowser = typeof window !== 'undefined';
+const hasValidConfig = firebaseConfig.apiKey && firebaseConfig.apiKey !== 'undefined';
 
-// Initialize Firebase services
-const db = getFirestore(app);
-const storage = getStorage(app);
-const database = getDatabase(app);
+// Initialize Firebase only in browser environment or when we have valid config and not in build time
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
+let database: Database | null = null;
+
+// Only initialize if we're not in build time or we're in a browser, and not skipping initialization
+if (!skipFirebaseInit && ((hasValidConfig && !isBuildTime) || isBrowser)) {
+  try {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    
+    // Initialize Firebase services
+    db = getFirestore(app);
+    storage = getStorage(app);
+    database = getDatabase(app);
+  } catch (error) {
+    // Only log in development and browser
+    if (process.env.NODE_ENV === 'development' && isBrowser) {
+      console.error('Firebase initialization error:', error);
+    }
+    
+    // Provide dummy objects for SSR/build
+    app = null;
+    auth = null;
+    db = null;
+    storage = null;
+    database = null;
+  }
+} else {
+  // Provide dummy objects for SSR/build
+  app = null;
+  auth = null;
+  db = null;
+  storage = null;
+  database = null;
+}
 
 export { app, auth, db, storage, database };

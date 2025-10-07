@@ -11,9 +11,24 @@ import {
   onAuthStateChanged,
   UserCredential,
   User,
+  Auth,
 } from 'firebase/auth';
 // Firestore imports temporarily removed
 // import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+
+// Check if auth is available
+const isAuthAvailable = (): boolean => {
+  if (!auth) {
+    throw new Error('Firebase Auth is not initialized. This could be because the app is running in a server environment or during build time.');
+  }
+  return true;
+};
+
+// Create a simple user profile (stub since Firestore is disabled)
+export const createUserProfile = async (user: User): Promise<void> => {
+  console.log('Would create user profile for:', user.uid);
+  // Implementation would normally store user data in Firestore
+};
 
 export const signUpWithEmail = async (
   email: string,
@@ -21,8 +36,10 @@ export const signUpWithEmail = async (
   displayName: string
 ): Promise<User> => {
   try {
+    isAuthAvailable();
+    
     const userCredential = await createUserWithEmailAndPassword(
-      auth,
+      auth as Auth,
       email,
       password
     );
@@ -33,7 +50,7 @@ export const signUpWithEmail = async (
         displayName,
       });
       
-      // Create user profile in Firestore
+      // Create user profile
       await createUserProfile(userCredential.user);
     }
     
@@ -47,26 +64,29 @@ export const signUpWithEmail = async (
 export const signInWithEmail = async (
   email: string,
   password: string
-): Promise<UserCredential> => {
+): Promise<User> => {
   try {
-    return await signInWithEmailAndPassword(auth, email, password);
+    isAuthAvailable();
+    const userCredential = await signInWithEmailAndPassword(auth as Auth, email, password);
+    return userCredential.user;
   } catch (error) {
-    console.error('Error signing in with email:', error);
+    console.error('Error signing in with email and password:', error);
     throw error;
   }
 };
 
-export const signInWithGoogle = async (): Promise<UserCredential> => {
+export const signInWithGoogle = async (): Promise<User> => {
   try {
+    isAuthAvailable();
     const provider = new GoogleAuthProvider();
-    const userCredential = await signInWithPopup(auth, provider);
+    const userCredential = await signInWithPopup(auth as Auth, provider);
     
-    // Create/update user profile in Firestore
+    // Check if it's a new user and create a profile if needed
     if (userCredential.user) {
       await createUserProfile(userCredential.user);
     }
     
-    return userCredential;
+    return userCredential.user;
   } catch (error) {
     console.error('Error signing in with Google:', error);
     throw error;
@@ -75,7 +95,8 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
 
 export const logOut = async (): Promise<void> => {
   try {
-    return await signOut(auth);
+    isAuthAvailable();
+    return await signOut(auth as Auth);
   } catch (error) {
     console.error('Error signing out:', error);
     throw error;
@@ -84,7 +105,8 @@ export const logOut = async (): Promise<void> => {
 
 export const resetPassword = async (email: string): Promise<void> => {
   try {
-    await sendPasswordResetEmail(auth, email);
+    isAuthAvailable();
+    await sendPasswordResetEmail(auth as Auth, email);
   } catch (error) {
     console.error('Error sending password reset email:', error);
     throw error;
@@ -96,42 +118,15 @@ export const confirmPasswordResetAndUpdate = async (
   newPassword: string
 ): Promise<void> => {
   try {
-    await confirmPasswordReset(auth, oobCode, newPassword);
+    isAuthAvailable();
+    await confirmPasswordReset(auth as Auth, oobCode, newPassword);
   } catch (error) {
     console.error('Error confirming password reset:', error);
     throw error;
   }
 };
 
-// Creates or updates user profile in Firestore after authentication
-export interface UserProfileData {
-  displayName?: string | null;
-  email?: string | null;
-  photoURL?: string | null;
-  subscriptionPlan?: string;
-  subscriptionStatus?: string;
-  [key: string]: unknown; // Allow for flexible additional fields
-}
-
-export const createUserProfile = async (user: User, additionalData?: UserProfileData): Promise<void> => {
-  if (!user) return;
-  
-  console.log('Firestore disabled - Creating user profile skipped for:', user.uid, user.email);
-  
-  // Extract user information for logging only
-  const { displayName, email, photoURL } = user;
-  
-  // Log what would be stored when Firestore is enabled
-  console.log('User profile data (not stored in Firestore yet):', {
-    uid: user.uid,
-    displayName,
-    email,
-    photoURL,
-    subscriptionPlan: 'free',
-    subscriptionStatus: 'active',
-    ...additionalData
-  });
-  
-  // Simply return a resolved promise since Firestore is disabled
-  return Promise.resolve();
+export const getCurrentUser = (): User | null => {
+  if (!auth) return null;
+  return auth.currentUser;
 };
